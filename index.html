@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Flashcards App</title>
+  <style>
+    /* Basic reset and styling */
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    .flashcard-container {
+      width: 90%;
+      max-width: 800px;
+      text-align: center;
+    }
+    /* Flashcard styling */
+    .flashcard {
+      position: relative;
+      width: 100%;
+      min-height: 200px;
+      margin-bottom: 20px;
+      perspective: 1000px;
+    }
+    .card-inner {
+      position: relative;
+      width: 100%;
+      min-height: 200px;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: transform 0.6s;
+      transform-style: preserve-3d;
+    }
+    .flashcard.flip .card-inner {
+      transform: rotateY(180deg);
+    }
+    .card-face {
+      position: absolute;
+      width: 100%;
+      min-height: 200px;
+      backface-visibility: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .card-front {
+      background: lightgray;
+    }
+    .card-back {
+      background: #f9f9f9;
+      transform: rotateY(180deg);
+    }
+    /* Buttons */
+    .controls button {
+      padding: 10px 15px;
+      margin: 5px;
+      border: none;
+      border-radius: 4px;
+      background: #007bff;
+      color: #fff;
+      cursor: pointer;
+    }
+    .controls button:hover {
+      background: #0056b3;
+    }
+    /* Card counter */
+    #cardCount {
+      margin-top: 10px;
+      font-style: italic;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <h1>Flashcards App</h1>
+  <div class="flashcard-container">
+    <div id="flashcard" class="flashcard">
+      <div class="card-inner">
+        <div class="card-face card-front">
+          <h2 id="question"></h2>
+        </div>
+        <div class="card-face card-back">
+          <div id="answer"></div>
+        </div>
+      </div>
+    </div>
+    <div class="controls">
+      <button id="prevBtn">Previous</button>
+      <button id="flipBtn">Flip</button>
+      <button id="nextBtn">Next</button>
+      <button id="ttsBtn">Read</button>
+    </div>
+    <p id="cardCount"></p>
+  </div>
+
+  <script>
+    // Array of flashcards (each flashcard is an object with a question and answer)
+    const flashcards = [
+      {
+        question: "Explain event delegation",
+        answer: "Event delegation is a technique where you add a single event listener to a parent element instead of adding separate listeners to each child element. Because events “bubble up” from the target element to its ancestors, the parent's listener can check event.target to determine which child triggered the event. This reduces memory usage and improves performance, especially when you have many similar elements."
+      },
+      {
+        question: "Explain how `this` works in JavaScript",
+        answer: "The value of `this` is determined by how a function is called rather than where it's defined. For example: In a method call, `this` refers to the object owning the method. In a plain function call, `this` is either the global object (in non‑strict mode) or undefined (in strict mode). Using call, apply, or bind lets you explicitly set `this`. Arrow functions, however, capture the `this` value of the enclosing context (lexical scoping) and do not have their own `this`."
+      },
+      {
+        question: "Explain how prototypal inheritance works",
+        answer: "In JavaScript, every object can have a “prototype” (an internal link to another object). When you access a property on an object, JavaScript first looks for it on the object itself; if not found, it follows the prototype chain. Constructor functions have a prototype property, and objects created with the `new` keyword have their internal [[Prototype]] set to that object. This is how properties and methods can be shared among instances."
+      },
+      {
+        question: "What do you think of AMD vs CommonJS?",
+        answer: "Both are module systems. AMD (Asynchronous Module Definition) is designed for browsers and loads modules asynchronously, which is good for performance when loading scripts in the browser. CommonJS is used mainly in Node.js, is synchronous (which is acceptable on the server), and is simpler to write. With the advent of ES6 modules (import/export), many projects are moving away from these older systems."
+      },
+      {
+        question: "Explain why the following doesn't work as an IIFE: function foo(){ }();. What needs to be changed?",
+        answer: "The syntax is parsed as a function declaration rather than an expression. To make it an Immediately Invoked Function Expression (IIFE), wrap the function in parentheses so that it's interpreted as an expression:\n\n(function foo() { })();\n\nOther variations include using a unary operator, e.g., !function foo() { }();"
+      },
+      {
+        question: "What's the difference between a variable that is: null, undefined or undeclared? How would you go about checking for any of these states?",
+        answer: "`undefined` is a variable that has been declared but not assigned a value. `null` is an explicit assignment that indicates 'no value'. An undeclared variable has not been declared at all in the current scope. To check: use typeof for undefined (e.g., typeof someVar === 'undefined'), direct equality for null (someVar === null), and typeof to safely check for undeclared variables."
+      },
+      {
+        question: "What is a closure, and how/why would you use one?",
+        answer: "A closure is when an inner function has access to variables from an outer function even after the outer function has returned. This is useful for creating private variables, implementing function factories, or preserving state between function calls."
+      },
+      {
+        question: "Can you describe the main difference between a .forEach loop and a .map() loop and why you would pick one versus the other?",
+        answer: ".forEach is used to iterate over an array to perform side effects and does not return a new array. .map transforms each element and returns a new array with the transformed values. Use .forEach for side effects and .map when you want to create a new array."
+      },
+      {
+        question: "What's a typical use case for anonymous functions?",
+        answer: "Anonymous functions are typically used as callbacks (for event handlers, array iterators, or immediately invoked function expressions) to keep code concise and avoid polluting the global namespace."
+      },
+      {
+        question: "How do you organize your code? (module pattern, classical inheritance?)",
+        answer: "Developers often use modular patterns (such as the revealing module pattern, CommonJS, AMD, or ES6 modules) to encapsulate functionality. Others use classical or pseudo‑classical inheritance via constructor functions or ES6 classes, or sometimes functional programming techniques."
+      },
+      {
+        question: "What's the difference between host objects and native objects?",
+        answer: "Native objects are provided by the ECMAScript specification (e.g., Array, Object, Function), whereas host objects are provided by the runtime environment (e.g., DOM elements in browsers or modules in Node.js)."
+      },
+      {
+        question: "Difference between: function Person(){}, var person = Person(), and var person = new Person()?",
+        answer: "`function Person(){}` is a function declaration. `var person = Person()` calls the function without creating a new instance, while `var person = new Person()` creates a new object whose prototype is Person.prototype and calls the constructor with `this` bound to the new object."
+      },
+      {
+        question: "What's the difference between .call and .apply?",
+        answer: "Both .call and .apply invoke a function with a specified `this` value. .call accepts a list of arguments, whereas .apply accepts an array of arguments."
+      },
+      {
+        question: "Explain Function.prototype.bind.",
+        answer: "The bind method creates a new function with its `this` keyword permanently set to the provided value. It can also preset initial arguments, making it useful for ensuring the correct context in callbacks."
+      },
+      {
+        question: "When would you use document.write()?",
+        answer: "document.write() writes directly to the document stream. It is rarely used in modern development because if used after the page has loaded, it can overwrite the entire document. It’s generally only used in legacy code or very simple examples."
+      },
+      {
+        question: "What's the difference between feature detection, feature inference, and using the UA string?",
+        answer: "Feature detection checks whether a feature exists (e.g., `'geolocation' in navigator). Feature inference assumes features based on related features. Using the UA (user agent) string parses the browser's string, which is less reliable and not recommended."
+      },
+      {
+        question: "Explain Ajax in as much detail as possible.",
+        answer: "Ajax (Asynchronous JavaScript and XML) is a technique for exchanging data with a server and updating parts of a web page without a full reload. It usually involves creating an XMLHttpRequest (or using fetch), sending an HTTP request asynchronously, and then updating the DOM based on the response."
+      },
+      {
+        question: "What are the advantages and disadvantages of using Ajax?",
+        answer: "Advantages: Improved user experience by updating parts of the page without a full reload, reduced bandwidth usage, and faster interactions. Disadvantages: Increased complexity in handling state and history, potential SEO challenges, and extra care required for error handling and fallbacks."
+      },
+      {
+        question: "Explain how JSONP works (and how it's not really Ajax).",
+        answer: "JSONP (JSON with Padding) works by dynamically inserting a `<script>` tag whose source is a URL returning JavaScript code wrapped in a callback function. This bypasses the same-origin policy for GET requests, but it isn’t a true Ajax call since it uses script insertion rather than XMLHttpRequest or fetch."
+      },
+      {
+        question: "Have you ever used JavaScript templating? If so, what libraries have you used?",
+        answer: "Common examples include Handlebars/Mustache (for logic-less templates), EJS or Pug (for more dynamic templating), and templating built into frameworks like React, Angular, or Vue."
+      },
+      {
+        question: "Explain 'hoisting'.",
+        answer: "Hoisting is JavaScript’s default behavior of moving declarations (of variables declared with var and function declarations) to the top of their containing scope during compilation. Note that only the declarations are hoisted—not the initializations."
+      },
+      {
+        question: "Describe event bubbling.",
+        answer: "Event bubbling is the process by which an event triggered on a child element propagates upward through its parent elements. For example, a click event on a button may trigger click handlers on its parent containers unless propagation is stopped."
+      },
+      {
+        question: "What's the difference between an 'attribute' and a 'property'?",
+        answer: "An attribute is the value defined in the HTML markup (e.g., `<input value='hello'>`), while a property is the current value held by the DOM object, which may change over time."
+      },
+      {
+        question: "Why is extending built-in JavaScript objects not a good idea?",
+        answer: "Extending built-in objects (by modifying their prototypes) can lead to conflicts with future ECMAScript standards or third‑party libraries and makes code harder to understand and maintain because it changes the expected behavior of standard objects."
+      },
+      {
+        question: "Difference between document load event and document DOMContentLoaded event?",
+        answer: "DOMContentLoaded fires when the HTML document has been fully parsed, but before images and other external resources have loaded. The load event fires when the entire page (including all dependent resources) has loaded."
+      },
+      {
+        question: "What is the difference between == and ===?",
+        answer: "== (abstract equality) compares values after performing type coercion, whereas === (strict equality) compares both value and type without coercion."
+      },
+      {
+        question: "Explain the same-origin policy with regards to JavaScript.",
+        answer: "The same-origin policy restricts how documents or scripts loaded from one origin (protocol, domain, and port) can interact with resources from another origin. This security measure prevents malicious scripts on one site from accessing sensitive data on another."
+      },
+      {
+        question: "Make this work: duplicate([1,2,3,4,5]); // [1,2,3,4,5,1,2,3,4,5]",
+        answer: "A simple solution is:\n\nfunction duplicate(arr) {\n  return arr.concat(arr);\n}\n\nconsole.log(duplicate([1,2,3,4,5]));"
+      },
+      {
+        question: "Why is it called a Ternary expression, what does the word 'Ternary' indicate?",
+        answer: "The term 'ternary' indicates that the operator takes three operands. In JavaScript, the ternary operator is a shorthand for an if-else statement:\n\ncondition ? expressionIfTrue : expressionIfFalse"
+      },
+      {
+        question: "What is 'use strict';? What are the advantages and disadvantages of using it?",
+        answer: "'use strict'; activates strict mode, which enforces stricter parsing and error handling. Advantages include catching common mistakes and preventing accidental globals; disadvantages include potential incompatibility with legacy code that relies on non‑strict behavior."
+      },
+      {
+        question: "Create a for loop that iterates up to 100 while outputting 'fizz' at multiples of 3, 'buzz' at multiples of 5 and 'fizzbuzz' at multiples of 3 and 5",
+        answer: "Example:\n\nfor (let i = 1; i <= 100; i++) {\n  if (i % 15 === 0) {\n    console.log('fizzbuzz');\n  } else if (i % 3 === 0) {\n    console.log('fizz');\n  } else if (i % 5 === 0) {\n    console.log('buzz');\n  } else {\n    console.log(i);\n  }\n}"
+      },
+      {
+        question: "Why is it, in general, a good idea to leave the global scope of a website as-is and never touch it?",
+        answer: "Leaving the global scope untouched minimizes the risk of naming collisions and unintended interactions between different parts of your code or third‑party libraries, which leads to more maintainable and less error-prone code."
+      },
+      {
+        question: "Why would you use something like the load event? Does this event have disadvantages? Do you know any alternatives, and why would you use those?",
+        answer: "The load event ensures all page resources have loaded before execution, but it fires later than when the DOM is ready, potentially delaying interactivity. An alternative is DOMContentLoaded, which fires when the DOM is parsed, or framework-specific lifecycle events."
+      },
+      {
+        question: "Explain what a single page app is and how to make one SEO-friendly.",
+        answer: "A single page app (SPA) loads a single HTML page and dynamically updates content without full page reloads. To make one SEO-friendly, use server-side rendering (SSR) or pre-rendering, manage URLs with the History API, and ensure proper meta tags and structured data."
+      },
+      {
+        question: "What is the extent of your experience with Promises and/or their polyfills?",
+        answer: "This is a personal question. A sample answer might be: 'I have extensive experience using Promises (and async/await) to manage asynchronous code and have used polyfills like Bluebird when native support was not available.'"
+      },
+      {
+        question: "What are the pros and cons of using Promises instead of callbacks?",
+        answer: "Pros: More readable code, easier chaining of asynchronous operations, and centralized error handling. Cons: Additional abstraction that might confuse beginners and pitfalls such as unhandled promise rejections if not carefully managed."
+      },
+      {
+        question: "What are some of the advantages/disadvantages of writing JavaScript code in a language that compiles to JavaScript?",
+        answer: "Advantages include additional language features (like static typing in TypeScript), improved tooling, and better maintainability. Disadvantages include an extra build/compilation step and potentially more complex debugging."
+      },
+      {
+        question: "What tools and techniques do you use debugging JavaScript code?",
+        answer: "Common tools include browser developer tools (for breakpoints, profiling, etc.), console logging (console.log), IDE-integrated debuggers, and linters or unit testing frameworks."
+      },
+      {
+        question: "What language constructions do you use for iterating over object properties and array items?",
+        answer: "For arrays: loops like for, forEach, for...of, and methods like .map() or .reduce(). For objects: for...in (with hasOwnProperty checks) or Object.keys(), Object.values(), and Object.entries() to iterate over keys, values, or both."
+      },
+      {
+        question: "Explain the difference between mutable and immutable objects.",
+        answer: "Mutable objects (like arrays or objects) can be changed after creation, while immutable objects (like primitives or objects created with Object.freeze()) cannot be changed once created."
+      },
+      {
+        question: "Explain the difference between synchronous and asynchronous functions.",
+        answer: "Synchronous functions execute one after another, blocking further code execution until they complete, whereas asynchronous functions allow the program to continue running while waiting for operations (using callbacks, Promises, or async/await)."
+      },
+      {
+        question: "What is event loop? What is the difference between call stack and task queue?",
+        answer: "The event loop continuously checks if the call stack is empty and, if so, pushes tasks from the task queue (or microtask queue) for execution. The call stack holds currently executing functions, while the task queue holds callbacks waiting to be executed."
+      },
+      {
+        question: "Explain the differences on the usage of foo between function foo() {} and var foo = function() {}",
+        answer: "function foo() {} is a function declaration and is hoisted in full, whereas var foo = function() {} is a function expression where only the variable declaration is hoisted (with an initial value of undefined)."
+      },
+      {
+        question: "What are the differences between variables created using let, var or const?",
+        answer: "var is function-scoped and hoisted; let is block-scoped (and subject to the temporal dead zone) and can be reassigned; const is block-scoped and cannot be reassigned once defined (although objects assigned to a const can have mutable properties)."
+      },
+      {
+        question: "What are the differences between ES6 class and ES5 function constructors?",
+        answer: "ES6 classes are syntactic sugar over ES5 function constructors. They provide a clearer inheritance pattern using the 'class' and 'extends' keywords, are not hoisted, and run in strict mode by default."
+      },
+      {
+        question: "Can you offer a use case for the new arrow => function syntax? How does this new syntax differ from other functions?",
+        answer: "Arrow functions provide a concise syntax and lexically bind the `this` value, making them ideal for callbacks where you need to preserve context. Unlike regular functions, arrow functions do not have their own `this`, `arguments`, or `prototype`."
+      },
+      {
+        question: "What advantage is there for using the arrow syntax for a method in a constructor?",
+        answer: "Using arrow functions for methods ensures that the method retains the lexical `this` (i.e. the instance) even when passed as a callback. (Be mindful that each instance gets its own copy of the arrow function.)"
+      },
+      {
+        question: "What is the definition of a higher-order function?",
+        answer: "A higher-order function is a function that either accepts one or more functions as arguments or returns a function as its result. Examples include array methods like .map(), .filter(), and .reduce()."
+      },
+      {
+        question: "Can you give an example for destructuring an object or an array?",
+        answer: "Object destructuring example:\n\nconst person = { name: 'Alice', age: 25 };\nconst { name, age } = person;\n\nArray destructuring example:\n\nconst arr = [1, 2, 3];\nconst [first, second, third] = arr;"
+      },
+      {
+        question: "ES6 Template Literals offer a lot of flexibility in generating strings, can you give an example?",
+        answer: "Example:\n\nconst name = 'Bob';\nconst greeting = `Hello, ${name}! Welcome to the site.`;\nconsole.log(greeting);"
+      },
+      {
+        question: "Can you give an example of a curry function and why this syntax offers an advantage?",
+        answer: "Example of currying:\n\nconst add = x => y => x + y;\nconst addFive = add(5);\nconsole.log(addFive(3)); // 8\n\nThis allows partial application and can make functions more reusable and composable."
+      },
+      {
+        question: "What are the benefits of using spread syntax and how is it different from rest syntax?",
+        answer: "Spread syntax expands an iterable (like an array) into individual elements, while rest syntax collects multiple elements into an array. Spread is used for passing arguments or copying arrays/objects; rest is used in function parameters."
+      },
+      {
+        question: "How can you share code between files?",
+        answer: "You can share code by using modules. In Node.js you might use CommonJS (module.exports and require), in the browser you might use AMD (RequireJS) or ES6 modules (import/export), often bundled with tools like Webpack."
+      },
+      {
+        question: "Why you might want to create static class members?",
+        answer: "Static class members belong to the class itself rather than to any instance. They’re useful for utility functions, constants, or properties that should be shared among all instances."
+      }
+    ];
+
+    // randomize the flashcards
+    shuffleArray(flashcards);
+    console.log(flashcards);
+
+    // shuffle the flashcards
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }    
+
+
+    // Variables to track current flashcard and whether the question is showing
+    let currentCardIndex = 0;
+    let showingQuestion = true;
+    
+    // DOM elements
+    const flashcardEl = document.getElementById('flashcard');
+    const questionEl = document.getElementById('question');
+    const answerEl = document.getElementById('answer');
+    const cardCountEl = document.getElementById('cardCount');
+    
+    // Function to update the flashcard display
+    function updateCard() {
+      const card = flashcards[currentCardIndex];
+      if (showingQuestion) {
+        questionEl.textContent = card.question;
+        answerEl.textContent = "";
+        console.log("showing question: ", card.question);
+
+      } else {
+        questionEl.textContent = "";
+        answerEl.textContent = card.answer;
+        console.log("showing answer: ", card.answer);
+
+      }
+       
+      cardCountEl.textContent = `Card ${currentCardIndex + 1} of ${flashcards.length}`;
+          
+    }
+    
+    // Event listeners for buttons
+document.getElementById('flipBtn').addEventListener('click', () => {
+  showingQuestion = !showingQuestion;
+  flashcardEl.classList.toggle('flip');
+  updateCard();
+});
+    
+    document.getElementById('nextBtn').addEventListener('click', () => {
+      currentCardIndex = (currentCardIndex + 1) % flashcards.length;
+      updateCard();
+    });
+    
+    document.getElementById('prevBtn').addEventListener('click', () => {
+      currentCardIndex = (currentCardIndex - 1 + flashcards.length) % flashcards.length;
+      updateCard();
+    });
+
+    // Text-to-Speech functionality using the Web Speech API
+    document.getElementById('ttsBtn').addEventListener('click', () => {
+      // Check if browser supports speechSynthesis
+      if ('speechSynthesis' in window) {
+        // Get the text to read: if showing the question, read it; otherwise, read the answer.
+        const text = showingQuestion ? flashcards[currentCardIndex].question : flashcards[currentCardIndex].answer;
+        // Create a new utterance
+        const utterance = new SpeechSynthesisUtterance(text);
+        // Optionally, set language and voice parameters
+        utterance.lang = 'en-US';
+        // Speak the text
+        window.speechSynthesis.speak(utterance);
+      } else {
+        alert("Sorry, your browser does not support text-to-speech.");
+      }
+    });
+    
+    // Initialize first flashcard
+    updateCard();
+  </script>
+</body>
+</html>
