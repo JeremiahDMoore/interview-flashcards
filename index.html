@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Flashcards App</title>
   <style>
     /* Basic reset and styling */
     body {
       font-family: Arial, sans-serif;
-      background: #f2f2f2;
+      background: lightgrey;
       margin: 0;
       padding: 20px;
       display: flex;
@@ -33,7 +34,7 @@
     .card-inner {
       position: relative;
       width: 100%;
-      min-height: 200px;
+      min-height: 300px;
       background: white;
       border: 1px solid #ddd;
       border-radius: 8px;
@@ -47,7 +48,7 @@
     .card-face {
       position: absolute;
       width: 100%;
-      min-height: 200px;
+      min-height: 300px;
       backface-visibility: hidden;
       display: flex;
       flex-direction: column;
@@ -57,10 +58,11 @@
       box-sizing: border-box;
     }
     .card-front {
-      background: lightgray;
+      background: #f9f9f9;
     }
     .card-back {
       background: #f9f9f9;
+      font-size: larger;
       transform: rotateY(180deg);
     }
     /* Buttons */
@@ -82,10 +84,17 @@
       font-style: italic;
       color: #555;
     }
+    @media (max-width: 600px) {
+      .flashcard-container {
+        width: 95%;
+        max-width: 100%;
+        padding: 0 10px;
+      }
+    }
   </style>
 </head>
 <body>
-  <h1>Flashcards App</h1>
+  <h1>Interview Prep Flashcards App</h1>
   <div class="flashcard-container">
     <div id="flashcard" class="flashcard">
       <div class="card-inner">
@@ -338,9 +347,7 @@
         [array[i], array[j]] = [array[j], array[i]];
       }
       return array;
-    }    
-
-
+    }
     // Variables to track current flashcard and whether the question is showing
     let currentCardIndex = 0;
     let showingQuestion = true;
