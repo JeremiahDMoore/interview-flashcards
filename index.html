@@ -17,10 +17,12 @@
     }
     h1 {
       margin-bottom: 20px;
+      text-align: center;
     }
     .flashcard-container {
       width: 90%;
       max-width: 800px;
+      max-height: 300px;
       text-align: center;
     }
     /* Flashcard styling */
@@ -35,7 +37,8 @@
       position: relative;
       width: 100%;
       min-height: 300px;
-      background: white;
+      background: #f9f9f9;
+      /* background matches cards */
       border: 1px solid #ddd;
       border-radius: 8px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
@@ -48,12 +51,18 @@
     .card-face {
       position: absolute;
       width: 100%;
-      min-height: 300px;
+      /* min-height: 300px; needed to be less overall, maybe a media query change for desktop?*/ 
+      max-height: 280px;
+      /* max-height before it overflows the container */
+      overflow-y: auto;
+      /* added for y-scroll */
       backface-visibility: hidden;
+      border-radius: 8px;
+      /* to match the others */
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      /* align-items: center; stops horizontal scroll */
+      justify-content: flex-start; 
       padding: 20px;
       box-sizing: border-box;
     }
